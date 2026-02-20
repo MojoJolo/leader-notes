@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("electronAPI", {
   toggleExpand: () => ipcRenderer.invoke("toggle-expand"),
   summarize: (notes) => ipcRenderer.invoke("summarize", notes),
+  ask: (notes, question) => ipcRenderer.invoke("ask", notes, question),
   getSessions: () => ipcRenderer.invoke("db:get-sessions"),
   createSession: (id, name) => ipcRenderer.invoke("db:create-session", id, name),
   addNote: (sessionId, content) => ipcRenderer.invoke("db:add-note", sessionId, content),

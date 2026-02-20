@@ -28,7 +28,8 @@ function getDb() {
 
 function createSession(id, name) {
   getDb().prepare("INSERT INTO sessions (id, name) VALUES (?, ?)").run(id, name);
-  return { id, name, notes: [], summary: null };
+  const row = getDb().prepare("SELECT created_at FROM sessions WHERE id = ?").get(id);
+  return { id, name, notes: [], summary: null, createdAt: row.created_at };
 }
 
 function addNote(sessionId, content) {
@@ -43,12 +44,13 @@ function updateSummary(sessionId, summary) {
 
 function getAllSessions() {
   const d = getDb();
-  const sessions = d.prepare("SELECT id, name, summary FROM sessions ORDER BY id ASC").all();
+  const sessions = d.prepare("SELECT id, name, summary, created_at FROM sessions ORDER BY id ASC").all();
   const noteStmt = d.prepare("SELECT content FROM notes WHERE session_id = ? ORDER BY id ASC");
   return sessions.map((s) => ({
     id: s.id,
     name: s.name,
     summary: s.summary,
+    createdAt: s.created_at,
     notes: noteStmt.all(s.id).map((n) => n.content)
   }));
 }
