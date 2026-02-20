@@ -1,14 +1,29 @@
 const https = require("https");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const AIProvider = require("./provider.cjs");
 
 class ZAIProvider extends AIProvider {
   constructor() {
     super();
-    this.apiKey = "";
+    this.apiKey = process.env.ZAI_API_KEY;
   }
 
   summarize(notes) {
-    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable. Output only the content and do not add introductory or concluding phrases..\n\n${notes.join("\n\n")}`;
+    const prompt = `I am a manager and I am leading the meeting for my team.
+Be my secretary and format what I send so it will be more readable.
+
+You are formatting raw meeting notes.
+
+Rules:
+- No introductions.
+- No explanations.
+- No commentary.
+- No closing remarks.
+- Output only the structured notes.
+
+Notes:
+${notes.join("\n\n")}`;
 
     return new Promise((resolve, reject) => {
       const data = JSON.stringify({

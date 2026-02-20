@@ -6,7 +6,24 @@ const AIProvider = require("./provider.cjs");
 
 class CodexCLIProvider extends AIProvider {
   summarize(notes) {
-    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable. Output only the content and do not add introductory or concluding phrases..\n\n${notes.join("\n\n")}`;
+    const prompt = `I am a manager and I am leading the meeting for my team.
+Be my secretary and format what I send so it will be more readable.
+Write like a senior engineer writing personal notes.
+Direct. Dense. No fluff.
+
+You are formatting raw meeting notes.
+
+Rules:
+- No introductions.
+- No explanations.
+- No commentary.
+- No closing remarks.
+- No corporate language.
+- Output only the structured notes.
+
+Notes:
+${notes.join("\n\n")}`;
+
     const outFile = path.join(os.tmpdir(), `leader-notes-${Date.now()}.txt`);
 
     return new Promise((resolve, reject) => {
