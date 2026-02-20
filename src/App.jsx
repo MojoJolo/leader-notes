@@ -188,6 +188,34 @@ function App() {
     }
   }
 
+  const handleDeleteSession = async (sessionId) => {
+    try {
+      await window.electronAPI.deleteSession(sessionId)
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      setOpenSessionMenuId(null)
+
+      // If deleting the active session, clear it
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(null)
+        setText('')
+      }
+
+      // If deleting the selected session, clear it
+      if (selectedSessionId === sessionId) {
+        setSelectedSessionId(null)
+      }
+
+      // Remove from summaries
+      setSummariesBySessionId((prev) => {
+        const { [sessionId]: _, ...rest } = prev
+        return rest
+      })
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to delete session:', err)
+    }
+  }
+
   return (
     <div className="app">
       <div className="toolbar">
@@ -338,7 +366,11 @@ function App() {
                           >
                             Rename
                           </button>
-                          <button type="button" className="session-history__menu-item">
+                          <button
+                            type="button"
+                            className="session-history__menu-item"
+                            onClick={() => handleDeleteSession(s.id)}
+                          >
                             Delete
                           </button>
                         </div>

@@ -44,6 +44,10 @@ ipcMain.handle("db:update-summary", (_event, sessionId, summary) => {
   db.updateSummary(sessionId, summary);
 });
 
+ipcMain.handle("db:delete-session", (_event, sessionId) => {
+  db.deleteSession(sessionId);
+});
+
 ipcMain.handle("summarize", async (_event, notes) => {
   return ai.summarize(notes);
 });

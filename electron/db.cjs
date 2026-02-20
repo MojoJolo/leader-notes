@@ -47,6 +47,12 @@ function updateSummary(sessionId, summary) {
     .run(summary, sessionId);
 }
 
+function deleteSession(sessionId) {
+  getDb()
+    .prepare("DELETE FROM sessions WHERE id = ?")
+    .run(sessionId);
+}
+
 function getAllSessions() {
   const d = getDb();
   return d
@@ -54,4 +60,4 @@ function getAllSessions() {
     .all();
 }
 
-module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, getAllSessions };
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions };

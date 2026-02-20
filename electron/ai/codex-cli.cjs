@@ -6,7 +6,7 @@ const AIProvider = require("./provider.cjs");
 
 class CodexCLIProvider extends AIProvider {
   summarize(notes) {
-    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable.:\n\n${notes.join("\n\n")}`;
+    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable. Output only the content and do not add introductory or concluding phrases..\n\n${notes.join("\n\n")}`;
     const outFile = path.join(os.tmpdir(), `leader-notes-${Date.now()}.txt`);
 
     return new Promise((resolve, reject) => {
