@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import './App.css'
-
-const ADJECTIVES = [
-  'Quick', 'Bright', 'Bold', 'Calm', 'Sharp', 'Swift', 'Warm', 'Clear',
-  'Fresh', 'Keen', 'Neat', 'Wise', 'Cool', 'Brave', 'Eager', 'Fair',
-  'Grand', 'Vivid', 'Lucid', 'Prime', 'Crisp', 'Agile', 'Deft', 'Snappy'
-]
-const NOUNS = [
-  'Standup', 'Sync', 'Huddle', 'Check-in', 'Retro', 'Review', 'Sprint',
-  'Debrief', 'Kickoff', 'Roundup', 'Catchup', 'Briefing', 'Planning',
-  'Workshop', 'Align', 'Pulse', 'Touchbase', 'Focus', 'Rundown', 'Recap'
-]
+import { ADJECTIVES, NOUNS } from './data/wordLists'
 
 function randomSessionName() {
   const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
