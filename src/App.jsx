@@ -35,7 +35,6 @@ function App() {
 
   const currentSession = sessions.find((s) => s.id === activeSessionId) ?? null
   const currentSessionNotes = currentSession ? currentSession.notes : []
-  const recentNotes = currentSessionNotes.slice(-3)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -141,9 +140,9 @@ function App() {
       <div className={`content ${expanded ? 'expanded' : ''}`}>
         <div className="content__left">
           <div className="notes-panel">
-            {recentNotes.length > 0 ? (
+            {currentSessionNotes.length > 0 ? (
               <ul className="recent-notes">
-                {recentNotes.map((note, i) => (
+                {currentSessionNotes.map((note, i) => (
                   <li key={i}>{note}</li>
                 ))}
               </ul>
