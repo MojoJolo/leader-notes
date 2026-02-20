@@ -5,8 +5,7 @@ const os = require("os");
 const AIProvider = require("./provider.cjs");
 
 class CodexCLIProvider extends AIProvider {
-  summarize(notes) {
-    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable.:\n\n${notes.join("\n\n")}`;
+  executePrompt(prompt) {
     const outFile = path.join(os.tmpdir(), `leader-notes-${Date.now()}.txt`);
 
     return new Promise((resolve, reject) => {
@@ -41,6 +40,16 @@ class CodexCLIProvider extends AIProvider {
       child.stdin.write(prompt);
       child.stdin.end();
     });
+  }
+
+  summarize(notes) {
+    const prompt = `I am a manager and I am leading the meeting for my team. Be my secretary and format what I send so it will be more readable.:\n\n${notes.join("\n\n")}`;
+    return this.executePrompt(prompt);
+  }
+
+  ask(notes, question) {
+    const prompt = `I am a manager. Based on my meeting notes below, answer the question that follows.\n\nNotes:\n${notes.join("\n\n")}\n\nQuestion: ${question}`;
+    return this.executePrompt(prompt);
   }
 }
 

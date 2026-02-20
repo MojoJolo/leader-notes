@@ -20,8 +20,12 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadURL("http://localhost:5173");
-  mainWindow.webContents.openDevTools();
+  if (app.isPackaged) {
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+  } else {
+    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools();
+  }
 }
 
 ipcMain.handle("db:get-sessions", () => {
@@ -38,6 +42,10 @@ ipcMain.handle("db:add-note", (_event, sessionId, content) => {
 
 ipcMain.handle("db:update-summary", (_event, sessionId, summary) => {
   db.updateSummary(sessionId, summary);
+});
+
+ipcMain.handle("ask", async (_event, notes, question) => {
+  return ai.ask(notes, question);
 });
 
 ipcMain.handle("summarize", async (_event, notes) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Markdown from 'react-markdown'
 import './App.css'
 
@@ -31,6 +31,7 @@ function App() {
   const [askAnswer, setAskAnswer] = useState('')
   const [askLoading, setAskLoading] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
+  const askSectionRef = useRef(null)
 
   useEffect(() => {
     window.electronAPI.getSessions().then((loaded) => {
@@ -107,9 +108,7 @@ function App() {
     setAskLoading(true)
     setAskAnswer('')
     try {
-      const result = await window.electronAPI.summarize(
-        [...session.notes, `\n\nQuestion: ${askQuestion.trim()}\nAnswer the above question based on the notes provided.`]
-      )
+      const result = await window.electronAPI.ask(session.notes, askQuestion.trim())
       setAskAnswer(result)
     } catch (err) {
       setAskAnswer(`Error: ${err.message}`)
@@ -220,13 +219,16 @@ function App() {
           return (
             <div className="summary-panel">
               {askOpen ? (
-                <div className="ask-section">
+                <div className="ask-section" ref={askSectionRef} onBlur={(e) => {
+                  if (!askSectionRef.current?.contains(e.relatedTarget)) {
+                    setAskOpen(false)
+                  }
+                }}>
                   <form onSubmit={handleAsk} className="ask-form">
                     <input
                       type="text"
                       value={askQuestion}
                       onChange={(e) => setAskQuestion(e.target.value)}
-                      onBlur={() => setTimeout(() => setAskOpen(false), 150)}
                       placeholder="Ask about your notes..."
                       autoFocus
                     />
