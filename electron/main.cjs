@@ -21,19 +21,23 @@ function createWindow() {
   });
 
   mainWindow.loadURL("http://localhost:5173");
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 }
 
 ipcMain.handle("db:get-sessions", () => {
   return db.getAllSessions();
 });
 
-ipcMain.handle("db:create-session", (_event, id, name) => {
-  return db.createSession(id, name);
+ipcMain.handle("db:create-session", (_event, id, name, note) => {
+  return db.createSession(id, name, note);
 });
 
-ipcMain.handle("db:add-note", (_event, sessionId, content) => {
-  return db.addNote(sessionId, content);
+ipcMain.handle("db:update-session-note", (_event, sessionId, note) => {
+  db.updateSessionNote(sessionId, note);
+});
+
+ipcMain.handle("db:update-session-name", (_event, sessionId, name) => {
+  db.updateSessionName(sessionId, name);
 });
 
 ipcMain.handle("db:update-summary", (_event, sessionId, summary) => {

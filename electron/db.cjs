@@ -13,44 +13,45 @@ function getDb() {
     CREATE TABLE IF NOT EXISTS sessions (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL DEFAULT 'Session',
+      note TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       summary TEXT
-    );
-    CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id INTEGER NOT NULL REFERENCES sessions(id),
-      content TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
   return db;
 }
 
-function createSession(id, name) {
-  getDb().prepare("INSERT INTO sessions (id, name) VALUES (?, ?)").run(id, name);
-  return { id, name, notes: [], summary: null };
+function createSession(id, name, note) {
+  getDb()
+    .prepare("INSERT INTO sessions (id, name, note) VALUES (?, ?, ?)")
+    .run(id, name, note);
+  return { id, name, note, summary: null };
 }
 
-function addNote(sessionId, content) {
-  const stmt = getDb().prepare("INSERT INTO notes (session_id, content) VALUES (?, ?)");
-  const result = stmt.run(sessionId, content);
-  return result.lastInsertRowid;
+function updateSessionNote(sessionId, note) {
+  getDb()
+    .prepare("UPDATE sessions SET note = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(note, sessionId);
+}
+
+function updateSessionName(sessionId, name) {
+  getDb()
+    .prepare("UPDATE sessions SET name = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(name, sessionId);
 }
 
 function updateSummary(sessionId, summary) {
-  getDb().prepare("UPDATE sessions SET summary = ? WHERE id = ?").run(summary, sessionId);
+  getDb()
+    .prepare("UPDATE sessions SET summary = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(summary, sessionId);
 }
 
 function getAllSessions() {
   const d = getDb();
-  const sessions = d.prepare("SELECT id, name, summary FROM sessions ORDER BY id ASC").all();
-  const noteStmt = d.prepare("SELECT content FROM notes WHERE session_id = ? ORDER BY id ASC");
-  return sessions.map((s) => ({
-    id: s.id,
-    name: s.name,
-    summary: s.summary,
-    notes: noteStmt.all(s.id).map((n) => n.content)
-  }));
+  return d
+    .prepare("SELECT id, name, note, summary, created_at, updated_at FROM sessions ORDER BY id ASC")
+    .all();
 }
 
-module.exports = { createSession, addNote, updateSummary, getAllSessions };
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, getAllSessions };
