@@ -418,11 +418,12 @@
 
 /* ── summary panel ── */
 .summary-panel {
-  width: 550px;
+  width: 750px;
   flex-shrink: 0;
   align-self: stretch;
   border-left: 1px solid rgba(0, 0, 0, 0.08);
   padding-left: 1.25rem;
+  padding-right: 0.5rem;
   overflow-y: auto;
 }
 
@@ -430,6 +431,7 @@
 .ask-trigger {
   display: block;
   width: 100%;
+  box-sizing: border-box;
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
   font-size: 0.8rem;
@@ -451,6 +453,7 @@
 /* ── ask section ── */
 .ask-section {
   margin-bottom: 1rem;
+  margin-right: 0.5rem;
 }
 
 /* ── ask form ── */
