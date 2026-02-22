@@ -16,17 +16,18 @@ function getDb() {
       note TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      summary TEXT
+      summary TEXT,
+      session_type INTEGER NOT NULL DEFAULT 0
     );
   `);
   return db;
 }
 
-function createSession(id, name, note) {
+function createSession(id, name, note, sessionType = 0) {
   getDb()
-    .prepare("INSERT INTO sessions (id, name, note) VALUES (?, ?, ?)")
-    .run(id, name, note);
-  return { id, name, note, summary: null };
+    .prepare("INSERT INTO sessions (id, name, note, session_type) VALUES (?, ?, ?, ?)")
+    .run(id, name, note, sessionType);
+  return { id, name, note, summary: null, session_type: sessionType };
 }
 
 function updateSessionNote(sessionId, note) {
@@ -56,7 +57,7 @@ function deleteSession(sessionId) {
 function getAllSessions() {
   const d = getDb();
   return d
-    .prepare("SELECT id, name, note, summary, created_at, updated_at FROM sessions ORDER BY id ASC")
+    .prepare("SELECT id, name, note, summary, created_at, updated_at, session_type FROM sessions ORDER BY id ASC")
     .all();
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import './App.css'
 import { ADJECTIVES, NOUNS } from './data/wordLists'
+import { SessionType } from './constants/sessionTypes.js'
 
 function randomSessionName() {
   const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
@@ -18,8 +19,6 @@ function App() {
   const [selectedSessionId, setSelectedSessionId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [askQuestion, setAskQuestion] = useState('')
-  const [askAnswer, setAskAnswer] = useState('')
-  const [askLoading, setAskLoading] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
   const [openSessionMenuId, setOpenSessionMenuId] = useState(null)
   const [editingSessionId, setEditingSessionId] = useState(null)
@@ -66,10 +65,10 @@ function App() {
     const sessionName = isNewSession ? randomSessionName() : currentSession.name
 
     if (isNewSession) {
-      await window.electronAPI.createSession(sessionId, sessionName, noteToSave)
+      await window.electronAPI.createSession(sessionId, sessionName, noteToSave, SessionType.NOTE)
       setSessions((prev) => [
         ...prev,
-        { id: sessionId, name: sessionName, note: noteToSave, summary: null }
+        { id: sessionId, name: sessionName, note: noteToSave, summary: null, session_type: SessionType.NOTE }
       ])
     } else {
       setSessions((prev) =>
@@ -79,21 +78,24 @@ function App() {
       )
       await window.electronAPI.updateSessionNote(sessionId, noteToSave)
     }
-    setText('')
     setActiveSessionId(sessionId)
 
-    if (expanded) {
-      setLoading(true)
-      setSelectedSessionId(sessionId)
-      try {
-        const result = await window.electronAPI.summarize(notesToSend)
-        setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
-        await window.electronAPI.updateSummary(sessionId, result)
-      } catch (err) {
-        setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: `Error: ${err.message}` }))
-      } finally {
-        setLoading(false)
-      }
+    // Open summary panel if not expanded
+    if (!expanded) {
+      const isExpanded = await window.electronAPI.toggleExpand()
+      setExpanded(isExpanded)
+    }
+
+    setLoading(true)
+    setSelectedSessionId(sessionId)
+    try {
+      const result = await window.electronAPI.summarize(notesToSend)
+      setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
+      await window.electronAPI.updateSummary(sessionId, result)
+    } catch (err) {
+      setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: `Error: ${err.message}` }))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -105,32 +107,68 @@ function App() {
   const handleRestoreSession = (sessionId) => {
     if (editingSessionId) return
     const session = sessions.find((s) => s.id === sessionId)
-    setActiveSessionId(sessionId)
-    setSelectedSessionId(sessionId)
     setOpenSessionMenuId(null)
+    setSelectedSessionId(sessionId)
     if (session) {
-      setText(session.note || '')
+      if (session.session_type === SessionType.NOTE) {
+        // Note sessions can be edited
+        setActiveSessionId(sessionId)
+        setText(session.note || '')
+      } else {
+        // Ask sessions are read-only - clear active session and textarea
+        setActiveSessionId(null)
+        setText('')
+      }
     }
   }
 
   const handleAsk = async (e) => {
     e.preventDefault()
     if (!askQuestion.trim()) return
-    const sessionIdToShow = selectedSessionId ?? currentSession?.id ?? null
-    const session = sessions.find((s) => s.id === sessionIdToShow)
-    if (!session || !session.note?.trim()) return
+    if (sessions.length === 0) {
+      return
+    }
 
-    setAskLoading(true)
-    setAskAnswer('')
+    const questionText = askQuestion.trim()
+    const sessionId = Date.now()
+    const sessionName = `Ask: ${questionText}`
+
+    setAskOpen(false)
+    setLoading(true)
     try {
-      const result = await window.electronAPI.summarize(
-        [session.note, `\n\nQuestion: ${askQuestion.trim()}\nAnswer the above question based on the notes provided.`]
-      )
-      setAskAnswer(result)
+      // Build context from note sessions only (exclude ask sessions to prevent redundancy)
+      const sessionsContext = sessions
+        .filter((s) => s.session_type === SessionType.NOTE)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .map((s) => {
+          let sessionText = `Session: ${s.name}\nDate: ${s.created_at}\n`
+          if (s.summary) {
+            sessionText += `Summary: ${s.summary}\n`
+          }
+          sessionText += `Notes: ${s.note}`
+          return sessionText
+        })
+        .join('\n\n---\n\n')
+
+      const prompt = `${sessionsContext}\n\nQuestion: ${questionText}\n\nAnswer the question based on ALL the sessions above. Provide specific details and reference which session the information came from when relevant. If the information is not available in the sessions, say so clearly.`
+
+      const result = await window.electronAPI.summarize([prompt])
+
+      // Create a new session for this Q&A
+      await window.electronAPI.createSession(sessionId, sessionName, questionText, SessionType.ASK)
+      await window.electronAPI.updateSummary(sessionId, result)
+      setSessions((prev) => [
+        ...prev,
+        { id: sessionId, name: sessionName, note: questionText, summary: result, session_type: SessionType.ASK }
+      ])
+      setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
+      setActiveSessionId(null)
+      setSelectedSessionId(sessionId)
     } catch (err) {
-      setAskAnswer(`Error: ${err.message}`)
+      // eslint-disable-next-line no-console
+      console.error('Failed to answer question:', err)
     } finally {
-      setAskLoading(false)
+      setLoading(false)
       setAskQuestion('')
     }
   }
@@ -138,22 +176,6 @@ function App() {
   const handleToggle = async () => {
     const isExpanded = await window.electronAPI.toggleExpand()
     setExpanded(isExpanded)
-
-    if (isExpanded && currentSession) {
-      setSelectedSessionId(currentSession.id)
-      if (currentSessionNote.trim() && !summariesBySessionId[currentSession.id]) {
-        setLoading(true)
-        try {
-          const result = await window.electronAPI.summarize([currentSessionNote])
-          setSummariesBySessionId((prev) => ({ ...prev, [currentSession.id]: result }))
-          await window.electronAPI.updateSummary(currentSession.id, result)
-        } catch (err) {
-          setSummariesBySessionId((prev) => ({ ...prev, [currentSession.id]: `Error: ${err.message}` }))
-        } finally {
-          setLoading(false)
-        }
-      }
-    }
   }
 
   const startRenameSession = (session, source) => {
@@ -221,7 +243,7 @@ function App() {
       <div className="toolbar">
         <span className="app-title">Leader Notes</span>
         <button className="expand-btn" onClick={handleToggle}>
-          {expanded ? '←' : '→'}
+          {expanded ? '─' : '☰'}
         </button>
       </div>
       <div className={`content ${expanded ? 'expanded' : ''}`}>
@@ -288,7 +310,7 @@ function App() {
                 ) : (
                   <span />
                 )}
-                <button type="submit">Submit</button>
+                <button type="submit">Summarize</button>
               </div>
             </form>
           </div>
@@ -400,15 +422,6 @@ function App() {
                     />
                     <button type="submit">Ask</button>
                   </form>
-                  {askLoading && <p className="summary-loading">Thinking...</p>}
-                  {askAnswer && (
-                    <div className="ask-answer">
-                      <h3>Answer</h3>
-                      <div className="summary-content">
-                        <Markdown>{askAnswer}</Markdown>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <button type="button" className="ask-trigger" onClick={() => setAskOpen(true)}>

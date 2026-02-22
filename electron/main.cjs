@@ -7,7 +7,7 @@ let mainWindow;
 let expanded = false;
 
 const COMPACT = { width: 500, height: 400 };
-const EXPANDED = { width: 1050, height: 750 };
+const EXPANDED = { width: 1250, height: 750 };
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -28,8 +28,8 @@ ipcMain.handle("db:get-sessions", () => {
   return db.getAllSessions();
 });
 
-ipcMain.handle("db:create-session", (_event, id, name, note) => {
-  return db.createSession(id, name, note);
+ipcMain.handle("db:create-session", (_event, id, name, note, sessionType = 0) => {
+  return db.createSession(id, name, note, sessionType);
 });
 
 ipcMain.handle("db:update-session-note", (_event, sessionId, note) => {
