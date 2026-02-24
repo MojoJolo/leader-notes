@@ -16,6 +16,7 @@ function createWindow() {
     width: COMPACT.width,
     height: COMPACT.height,
     resizable: false,
+    titleBarStyle: 'hiddenInset',
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.cjs")

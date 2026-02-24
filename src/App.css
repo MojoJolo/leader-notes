@@ -5,23 +5,29 @@
   padding: 0 1.25rem 1.25rem;
 }
 
-/* ── toolbar ── */
-.toolbar {
-  height: 44px;
+/* ── title bar ── */
+.title-bar {
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   margin-bottom: 0.75rem;
+  position: relative;
+  background: transparent;
+  -webkit-app-region: drag;
+  padding-left: 80px; /* Make room for macOS traffic lights */
 }
 
-.toolbar .app-title {
+.title-bar__title {
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(0, 0, 0, 0.35);
+  -webkit-app-region: no-drag;
+  pointer-events: none;
 }
 
 .expand-btn {
@@ -38,6 +44,7 @@
   cursor: pointer;
   padding: 0;
   transition: background 0.15s ease, color 0.15s ease;
+  -webkit-app-region: no-drag;
 }
 
 .expand-btn:hover {

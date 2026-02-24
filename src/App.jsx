@@ -3,6 +3,7 @@ import Markdown from 'react-markdown'
 import './App.css'
 import { ADJECTIVES, NOUNS } from './data/wordLists'
 import { SessionType } from './constants/sessionTypes.js'
+import TitleBar from './components/TitleBar.jsx'
 
 function randomSessionName() {
   const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
@@ -240,12 +241,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="toolbar">
-        <span className="app-title">Briefing</span>
-        <button className="expand-btn" onClick={handleToggle}>
-          {expanded ? '─' : '☰'}
-        </button>
-      </div>
+      <TitleBar expanded={expanded} onToggle={handleToggle} />
       <div className={`content ${expanded ? 'expanded' : ''}`}>
         <div className="content__left">
           <div className="notes-panel">
