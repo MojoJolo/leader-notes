@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
+
+app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");

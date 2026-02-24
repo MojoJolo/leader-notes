@@ -241,7 +241,7 @@ function App() {
   return (
     <div className="app">
       <div className="toolbar">
-        <span className="app-title">Leader Notes</span>
+        <span className="app-title">Briefing</span>
         <button className="expand-btn" onClick={handleToggle}>
           {expanded ? '─' : '☰'}
         </button>
