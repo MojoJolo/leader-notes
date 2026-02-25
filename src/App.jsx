@@ -306,7 +306,7 @@ function App() {
                 ) : (
                   <span />
                 )}
-                <button type="submit">Summarize</button>
+                <button type="submit">Generate Brief</button>
               </div>
             </form>
           </div>
@@ -426,7 +426,7 @@ function App() {
                     : 'Ask about notes...'}
                 </button>
               )}
-              <h3>Summary</h3>
+              <h3>Brief</h3>
               {loading ? (
                 <p className="summary-loading">Thinking...</p>
               ) : summaryToShow ? (
