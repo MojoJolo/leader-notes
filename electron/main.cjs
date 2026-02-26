@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
+
+app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
@@ -14,6 +16,7 @@ function createWindow() {
     width: COMPACT.width,
     height: COMPACT.height,
     resizable: false,
+    titleBarStyle: 'hiddenInset',
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.cjs")
@@ -58,6 +61,10 @@ ipcMain.handle("toggle-expand", () => {
   const size = expanded ? EXPANDED : COMPACT;
   mainWindow.setSize(size.width, size.height, true);
   mainWindow.center();
+  return expanded;
+});
+
+ipcMain.handle("get-expanded-state", () => {
   return expanded;
 });
 

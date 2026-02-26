@@ -3,6 +3,7 @@ import Markdown from 'react-markdown'
 import './App.css'
 import { ADJECTIVES, NOUNS } from './data/wordLists'
 import { SessionType } from './constants/sessionTypes.js'
+import TitleBar from './components/TitleBar.jsx'
 
 function randomSessionName() {
   const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
@@ -33,6 +34,12 @@ function App() {
         if (s.summary) withSummary[s.id] = s.summary
       })
       setSummariesBySessionId(withSummary)
+    })
+  }, [])
+
+  useEffect(() => {
+    window.electronAPI.getExpandedState().then((isExpanded) => {
+      setExpanded(isExpanded)
     })
   }, [])
 
@@ -240,12 +247,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="toolbar">
-        <span className="app-title">Leader Notes</span>
-        <button className="expand-btn" onClick={handleToggle}>
-          {expanded ? '─' : '☰'}
-        </button>
-      </div>
+      <TitleBar expanded={expanded} onToggle={handleToggle} />
       <div className={`content ${expanded ? 'expanded' : ''}`}>
         <div className="content__left">
           <div className="notes-panel">
@@ -310,7 +312,7 @@ function App() {
                 ) : (
                   <span />
                 )}
-                <button type="submit">Summarize</button>
+                <button type="submit">Generate Brief</button>
               </div>
             </form>
           </div>
@@ -430,7 +432,7 @@ function App() {
                     : 'Ask about notes...'}
                 </button>
               )}
-              <h3>Summary</h3>
+              <h3>Brief</h3>
               {loading ? (
                 <p className="summary-loading">Thinking...</p>
               ) : summaryToShow ? (
@@ -440,7 +442,7 @@ function App() {
               ) : sessionIdToShow ? (
                 <p className="summary-empty">No summary for this session yet</p>
               ) : (
-                <p className="summary-empty">Submit a note to see a summary</p>
+                <p className="summary-empty">Submit a note to see the brief</p>
               )}
             </div>
           )

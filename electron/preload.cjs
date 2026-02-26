@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   toggleExpand: () => ipcRenderer.invoke("toggle-expand"),
+  getExpandedState: () => ipcRenderer.invoke("get-expanded-state"),
   summarize: (notes) => ipcRenderer.invoke("summarize", notes),
   getSessions: () => ipcRenderer.invoke("db:get-sessions"),
   createSession: (id, name, note) => ipcRenderer.invoke("db:create-session", id, name, note),
