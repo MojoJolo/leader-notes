@@ -64,6 +64,10 @@ ipcMain.handle("toggle-expand", () => {
   return expanded;
 });
 
+ipcMain.handle("get-expanded-state", () => {
+  return expanded;
+});
+
 app.whenReady().then(() => {
   createWindow();
 

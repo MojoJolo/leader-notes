@@ -38,6 +38,12 @@ function App() {
   }, [])
 
   useEffect(() => {
+    window.electronAPI.getExpandedState().then((isExpanded) => {
+      setExpanded(isExpanded)
+    })
+  }, [])
+
+  useEffect(() => {
     if (openSessionMenuId == null) return
 
     const handleOutsideClick = (event) => {
@@ -436,7 +442,7 @@ function App() {
               ) : sessionIdToShow ? (
                 <p className="summary-empty">No summary for this session yet</p>
               ) : (
-                <p className="summary-empty">Submit a note to see a summary</p>
+                <p className="summary-empty">Submit a note to see the brief</p>
               )}
             </div>
           )
