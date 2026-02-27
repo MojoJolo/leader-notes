@@ -4,6 +4,7 @@ app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
+const { ASK_TEMPLATE } = require("./ai/config.cjs");
 
 let mainWindow;
 let expanded = false;
@@ -53,6 +54,11 @@ ipcMain.handle("db:delete-session", (_event, sessionId) => {
 
 ipcMain.handle("summarize", async (_event, notes) => {
   return ai.summarize(notes);
+});
+
+ipcMain.handle("ask", async (_event, sessionsContext, question) => {
+  const prompt = ASK_TEMPLATE(sessionsContext, question);
+  return ai.summarize([prompt]);
 });
 
 ipcMain.handle("toggle-expand", () => {

@@ -157,9 +157,7 @@ function App() {
         })
         .join('\n\n---\n\n')
 
-      const prompt = `${sessionsContext}\n\nQuestion: ${questionText}\n\nAnswer the question based on ALL the sessions above. Provide specific details and reference which session the information came from when relevant. If the information is not available in the sessions, say so clearly.`
-
-      const result = await window.electronAPI.summarize([prompt])
+      const result = await window.electronAPI.ask(sessionsContext, questionText)
 
       // Create a new session for this Q&A
       await window.electronAPI.createSession(sessionId, sessionName, questionText, SessionType.ASK)
