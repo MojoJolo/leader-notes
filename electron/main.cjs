@@ -73,18 +73,11 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
     const sessionIds = db.getAllSessions()
       .filter((s) => s.session_type === 0)
       .map((s) => s.id);
-    let items = db.getItems(sessionIds);
-    if (classification.category) {
-      items = items.filter((i) => i.category === classification.category);
-    }
-    const from = classification.from ? new Date(classification.from) : null;
-    const to   = classification.to   ? new Date(classification.to)   : null;
-    if (from || to) {
-      items = items.filter((i) => {
-        const t = new Date(i.created_at);
-        return (!from || t >= from) && (!to || t < to);
-      });
-    }
+    let items = db.getItems(sessionIds, {
+      category: classification.category || undefined,
+      from: classification.from || undefined,
+      to: classification.to || undefined,
+    });
     if (items.length === 0) return 'No items found.';
 
     const grouped = {};
