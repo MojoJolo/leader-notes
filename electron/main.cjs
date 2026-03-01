@@ -4,7 +4,7 @@ app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
-const { ASK_TEMPLATE } = require("./ai/config.cjs");
+const { ASK_TEMPLATE, EXTRACT_TEMPLATE } = require("./ai/config.cjs");
 
 let mainWindow;
 let expanded = false;
@@ -59,6 +59,29 @@ ipcMain.handle("summarize", async (_event, notes) => {
 ipcMain.handle("ask", async (_event, sessionsContext, question) => {
   const prompt = ASK_TEMPLATE(sessionsContext, question);
   return ai.summarize([prompt]);
+});
+
+ipcMain.handle("extract-items", async (_event, sessionId, note) => {
+  const prompt = EXTRACT_TEMPLATE(note);
+  const raw = await ai.summarize([prompt]);
+  let items = [];
+  try {
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    items = JSON.parse(cleaned);
+    if (!Array.isArray(items)) items = [];
+  } catch {
+    return [];
+  }
+  db.replaceItems(sessionId, items);
+  return items;
+});
+
+ipcMain.handle("db:get-items", (_event, sessionIds) => {
+  return db.getItems(sessionIds);
+});
+
+ipcMain.handle("db:mark-item-done", (_event, itemId) => {
+  db.markItemDone(itemId);
 });
 
 ipcMain.handle("toggle-expand", () => {

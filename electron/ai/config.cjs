@@ -59,8 +59,20 @@ Use headings or subheadings for better readability.
 
 Question: ${question}`;
 
+const EXTRACT_TEMPLATE = (note) => `Extract all issues, blockers, and pending items from the notes below.
+Return ONLY a JSON array. No markdown, no code blocks, no explanation.
+Each item must have:
+- "category": one of "issue", "blocker", "pending"
+- "text": a short description of the item
+
+If there are no items, return [].
+
+Notes:
+${note}`;
+
 module.exports = {
   SUMMARY_TEMPLATE,
   ASK_TEMPLATE,
+  EXTRACT_TEMPLATE,
   AI_PROVIDER
 };

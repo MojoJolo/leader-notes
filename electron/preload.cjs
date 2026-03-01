@@ -11,4 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   updateSessionName: (sessionId, name) => ipcRenderer.invoke("db:update-session-name", sessionId, name),
   updateSummary: (sessionId, summary) => ipcRenderer.invoke("db:update-summary", sessionId, summary),
   deleteSession: (sessionId) => ipcRenderer.invoke("db:delete-session", sessionId),
+  extractItems: (sessionId, note) => ipcRenderer.invoke("extract-items", sessionId, note),
+  getItems: (sessionIds) => ipcRenderer.invoke("db:get-items", sessionIds),
+  markItemDone: (itemId) => ipcRenderer.invoke("db:mark-item-done", itemId),
 });

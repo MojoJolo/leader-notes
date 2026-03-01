@@ -99,6 +99,13 @@ function App() {
       const result = await window.electronAPI.summarize(notesToSend)
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
       await window.electronAPI.updateSummary(sessionId, result)
+      const items = await window.electronAPI.extractItems(sessionId, noteToSave)
+      if (Array.isArray(items) && items.length > 0) {
+        setSummariesBySessionId((prev) => ({
+          ...prev,
+          [sessionId]: result + '\n\n```json\n' + JSON.stringify(items, null, 2) + '\n```'
+        }))
+      }
     } catch (err) {
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: `Error: ${err.message}` }))
     } finally {

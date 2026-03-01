@@ -19,6 +19,14 @@ function getDb() {
       summary TEXT,
       session_type INTEGER NOT NULL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      category TEXT NOT NULL,
+      text TEXT NOT NULL,
+      done INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
   return db;
 }
@@ -61,4 +69,26 @@ function getAllSessions() {
     .all();
 }
 
-module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions };
+function replaceItems(sessionId, items) {
+  const d = getDb();
+  d.prepare("DELETE FROM items WHERE session_id = ?").run(sessionId);
+  const insert = d.prepare("INSERT INTO items (session_id, category, text) VALUES (?, ?, ?)");
+  for (const item of items) {
+    insert.run(sessionId, item.category, item.text);
+  }
+}
+
+function getItems(sessionIds) {
+  if (!sessionIds.length) return [];
+  const d = getDb();
+  const placeholders = sessionIds.map(() => '?').join(',');
+  return d
+    .prepare(`SELECT id, session_id, category, text, done FROM items WHERE session_id IN (${placeholders}) ORDER BY created_at ASC`)
+    .all(...sessionIds);
+}
+
+function markItemDone(itemId) {
+  getDb().prepare("UPDATE items SET done = 1 WHERE id = ?").run(itemId);
+}
+
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, markItemDone };
