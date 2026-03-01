@@ -76,7 +76,7 @@ Return ONLY a JSON object. No markdown, no code blocks, no explanation.
 The object must have:
 - "isItemQuery": boolean — true if the question is about issues, blockers, or pending items
 - "category": one of "issue", "blocker", "pending", or null — the specific category if asking about one type, null if asking about all or if not an item query
-- "scope": "all" or null — "all" if asking about all sessions, null otherwise
+- "scope": one of "today", "this_week", "last_week", "this_month", "all", or null — the time range the question refers to; null means no specific time filter
 
 Question: ${question}`;
 
