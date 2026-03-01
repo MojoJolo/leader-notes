@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
+const { startOfDay, startOfWeek, startOfMonth, subWeeks } = require("date-fns");
 
 app.setName("Briefing");
 const path = require("path");
@@ -78,37 +79,19 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
     }
     if (classification.scope && classification.scope !== 'all') {
       const now = new Date();
-      let cutoff;
-      switch (classification.scope) {
-        case 'today':
-          cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'this_week': {
-          const d = new Date(now);
-          d.setDate(now.getDate() - now.getDay());
-          d.setHours(0, 0, 0, 0);
-          cutoff = d;
-          break;
-        }
-        case 'last_week': {
-          const d = new Date(now);
-          d.setDate(now.getDate() - now.getDay() - 7);
-          d.setHours(0, 0, 0, 0);
-          cutoff = d;
-          const end = new Date(d);
-          end.setDate(d.getDate() + 7);
-          items = items.filter((i) => {
-            const t = new Date(i.created_at);
-            return t >= cutoff && t < end;
-          });
-          cutoff = null;
-          break;
-        }
-        case 'this_month':
-          cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
+      const scopeCutoffs = {
+        today:      [startOfDay(now),              null],
+        this_week:  [startOfWeek(now),             null],
+        last_week:  [startOfWeek(subWeeks(now, 1)), startOfWeek(now)],
+        this_month: [startOfMonth(now),            null],
+      };
+      const [from, to] = scopeCutoffs[classification.scope] ?? [null, null];
+      if (from) {
+        items = items.filter((i) => {
+          const t = new Date(i.created_at);
+          return t >= from && (to ? t < to : true);
+        });
       }
-      if (cutoff) items = items.filter((i) => new Date(i.created_at) >= cutoff);
     }
     if (items.length === 0) return 'No items found.';
 
