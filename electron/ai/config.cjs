@@ -70,9 +70,20 @@ If there are no items, return [].
 Notes:
 ${note}`;
 
+const CLASSIFY_TEMPLATE = (question) => `You are classifying a question about meeting notes.
+Determine if this question is asking specifically about tracked items (issues, blockers, or pending tasks).
+Return ONLY a JSON object. No markdown, no code blocks, no explanation.
+The object must have:
+- "isItemQuery": boolean — true if the question is about issues, blockers, or pending items
+- "category": one of "issue", "blocker", "pending", or null — the specific category if asking about one type, null if asking about all or if not an item query
+- "scope": "all" or null — "all" if asking about all sessions, null otherwise
+
+Question: ${question}`;
+
 module.exports = {
   SUMMARY_TEMPLATE,
   ASK_TEMPLATE,
   EXTRACT_TEMPLATE,
+  CLASSIFY_TEMPLATE,
   AI_PROVIDER
 };
