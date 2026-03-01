@@ -63,7 +63,7 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
     const classifyRaw = await ai.summarize([CLASSIFY_TEMPLATE(question)]);
     const cleaned = classifyRaw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    if (parsed && typeof parsed === 'object') classification = parsed;
+    if (typeof parsed.isItemQuery === 'boolean') classification = parsed;
   } catch {
     // Fall through to normal ask on parse failure
   }
