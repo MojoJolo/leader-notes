@@ -1,5 +1,4 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
-const { startOfDay, startOfWeek, startOfMonth, subWeeks } = require("date-fns");
 
 app.setName("Briefing");
 const path = require("path");
@@ -59,9 +58,10 @@ ipcMain.handle("summarize", async (_event, notes) => {
 
 ipcMain.handle("ask", async (_event, sessionsContext, question) => {
   // Classify the question first to determine if it targets tracked items
-  let classification = { isItemQuery: false, category: null, scope: null };
+  let classification = { isItemQuery: false, category: null, from: null, to: null };
   try {
-    const classifyRaw = await ai.summarize([CLASSIFY_TEMPLATE(question)]);
+    const now = new Date().toISOString().slice(0, 10);
+    const classifyRaw = await ai.summarize([CLASSIFY_TEMPLATE(question, now)]);
     const cleaned = classifyRaw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
     if (typeof parsed.isItemQuery === 'boolean') classification = parsed;
@@ -77,21 +77,13 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
     if (classification.category) {
       items = items.filter((i) => i.category === classification.category);
     }
-    if (classification.scope && classification.scope !== 'all') {
-      const now = new Date();
-      const scopeCutoffs = {
-        today:      [startOfDay(now),              null],
-        this_week:  [startOfWeek(now),             null],
-        last_week:  [startOfWeek(subWeeks(now, 1)), startOfWeek(now)],
-        this_month: [startOfMonth(now),            null],
-      };
-      const [from, to] = scopeCutoffs[classification.scope] ?? [null, null];
-      if (from) {
-        items = items.filter((i) => {
-          const t = new Date(i.created_at);
-          return t >= from && (to ? t < to : true);
-        });
-      }
+    const from = classification.from ? new Date(classification.from) : null;
+    const to   = classification.to   ? new Date(classification.to)   : null;
+    if (from || to) {
+      items = items.filter((i) => {
+        const t = new Date(i.created_at);
+        return (!from || t >= from) && (!to || t < to);
+      });
     }
     if (items.length === 0) return 'No items found.';
 
