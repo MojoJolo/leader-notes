@@ -603,3 +603,41 @@
   border-left: 3px solid rgba(0, 0, 0, 0.12);
   color: rgba(0, 0, 0, 0.55);
 }
+
+/* ── items section ── */
+.items-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.items-group {
+  margin-bottom: 0.75rem;
+}
+
+.items-group__label {
+  margin: 0 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.items-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.items-list__item {
+  padding: 0.15rem 0;
+  font-size: 0.85rem;
+  color: #4a4a4a;
+  line-height: 1.5;
+}
+
+.items-list__item--done {
+  text-decoration: line-through;
+  color: rgba(0, 0, 0, 0.3);
+}

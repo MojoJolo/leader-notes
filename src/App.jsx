@@ -21,6 +21,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [askQuestion, setAskQuestion] = useState('')
   const [askOpen, setAskOpen] = useState(false)
+  const [itemsBySessionId, setItemsBySessionId] = useState({})
   const [openSessionMenuId, setOpenSessionMenuId] = useState(null)
   const [editingSessionId, setEditingSessionId] = useState(null)
   const [editingSessionName, setEditingSessionName] = useState('')
@@ -34,6 +35,18 @@ function App() {
         if (s.summary) withSummary[s.id] = s.summary
       })
       setSummariesBySessionId(withSummary)
+
+      const sessionIds = loaded.map((s) => s.id)
+      if (sessionIds.length > 0) {
+        window.electronAPI.getItems(sessionIds).then((allItems) => {
+          const grouped = {}
+          for (const item of allItems) {
+            if (!grouped[item.session_id]) grouped[item.session_id] = []
+            grouped[item.session_id].push(item)
+          }
+          setItemsBySessionId(grouped)
+        })
+      }
     })
   }, [])
 
@@ -99,12 +112,10 @@ function App() {
       const result = await window.electronAPI.summarize(notesToSend)
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
       await window.electronAPI.updateSummary(sessionId, result)
-      const items = await window.electronAPI.extractItems(sessionId, noteToSave)
-      if (Array.isArray(items) && items.length > 0) {
-        setSummariesBySessionId((prev) => ({
-          ...prev,
-          [sessionId]: result + '\n\n```json\n' + JSON.stringify(items, null, 2) + '\n```'
-        }))
+      await window.electronAPI.extractItems(sessionId, noteToSave)
+      const items = await window.electronAPI.getItems([sessionId])
+      if (items.length > 0) {
+        setItemsBySessionId((prev) => ({ ...prev, [sessionId]: items }))
       }
     } catch (err) {
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: `Error: ${err.message}` }))
@@ -414,6 +425,7 @@ function App() {
         {expanded && (() => {
           const sessionIdToShow = selectedSessionId ?? currentSession?.id ?? null
           const summaryToShow = sessionIdToShow ? summariesBySessionId[sessionIdToShow] : null
+          const itemsToShow = sessionIdToShow ? (itemsBySessionId[sessionIdToShow] ?? []) : []
           return (
             <div className="summary-panel">
               {askOpen ? (
@@ -448,6 +460,27 @@ function App() {
                 <p className="summary-empty">No summary for this session yet</p>
               ) : (
                 <p className="summary-empty">Submit a note to see the brief</p>
+              )}
+              {itemsToShow.length > 0 && (
+                <div className="items-section">
+                  <h3>Items</h3>
+                  {['issue', 'blocker', 'pending'].map((cat) => {
+                    const catItems = itemsToShow.filter((i) => i.category === cat)
+                    if (!catItems.length) return null
+                    return (
+                      <div key={cat} className="items-group">
+                        <p className="items-group__label">{cat}s</p>
+                        <ul className="items-list">
+                          {catItems.map((item) => (
+                            <li key={item.id} className={`items-list__item${item.done ? ' items-list__item--done' : ''}`}>
+                              {item.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </div>
           )
