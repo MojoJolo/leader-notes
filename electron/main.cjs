@@ -4,7 +4,7 @@ app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
-const { ASK_TEMPLATE, EXTRACT_TEMPLATE } = require("./ai/config.cjs");
+const { ASK_TEMPLATE, EXTRACT_TEMPLATE, CLASSIFY_TEMPLATE } = require("./ai/config.cjs");
 
 let mainWindow;
 let expanded = false;
@@ -57,6 +57,43 @@ ipcMain.handle("summarize", async (_event, notes) => {
 });
 
 ipcMain.handle("ask", async (_event, sessionsContext, question) => {
+  // Classify the question first to determine if it targets tracked items
+  let classification = { isItemQuery: false, category: null, from: null, to: null };
+  try {
+    const now = new Date().toISOString().slice(0, 10);
+    const classifyRaw = await ai.summarize([CLASSIFY_TEMPLATE(question, now)]);
+    const cleaned = classifyRaw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed.isItemQuery === 'boolean') classification = parsed;
+  } catch {
+    // Fall through to normal ask on parse failure
+  }
+
+  if (classification.isItemQuery) {
+    const sessionIds = db.getAllSessions()
+      .filter((s) => s.session_type === 0)
+      .map((s) => s.id);
+    let items = db.getItems(sessionIds, {
+      category: classification.category || undefined,
+      from: classification.from || undefined,
+      to: classification.to || undefined,
+    });
+    if (items.length === 0) return 'No items found.';
+
+    const grouped = {};
+    for (const item of items) {
+      if (!grouped[item.category]) grouped[item.category] = [];
+      grouped[item.category].push(item);
+    }
+    return Object.entries(grouped)
+      .map(([cat, catItems]) => {
+        const heading = `## ${cat.charAt(0).toUpperCase() + cat.slice(1)}s`;
+        const lines = catItems.map((i) => `- ${i.done ? `~~${i.text}~~` : i.text}`);
+        return [heading, ...lines].join('\n');
+      })
+      .join('\n\n');
+  }
+
   const prompt = ASK_TEMPLATE(sessionsContext, question);
   return ai.summarize([prompt]);
 });

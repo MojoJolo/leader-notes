@@ -78,13 +78,17 @@ function replaceItems(sessionId, items) {
   }
 }
 
-function getItems(sessionIds) {
+function getItems(sessionIds, { category, from, to } = {}) {
   if (!sessionIds.length) return [];
   const d = getDb();
   const placeholders = sessionIds.map(() => '?').join(',');
-  return d
-    .prepare(`SELECT id, session_id, category, text, done FROM items WHERE session_id IN (${placeholders}) ORDER BY created_at ASC`)
-    .all(...sessionIds);
+  const params = [...sessionIds];
+  let sql = `SELECT id, session_id, category, text, done, created_at FROM items WHERE session_id IN (${placeholders})`;
+  if (category) { sql += ` AND category = ?`; params.push(category); }
+  if (from)     { sql += ` AND date(created_at) >= date(?)`; params.push(from); }
+  if (to)       { sql += ` AND date(created_at) < date(?)`; params.push(to); }
+  sql += ` ORDER BY created_at ASC`;
+  return d.prepare(sql).all(...params);
 }
 
 function markItemDone(itemId) {

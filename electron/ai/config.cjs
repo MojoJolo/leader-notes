@@ -70,9 +70,28 @@ If there are no items, return [].
 Notes:
 ${note}`;
 
+const CLASSIFY_TEMPLATE = (question, now) => `You are classifying a question about meeting notes.
+Determine if this question is asking specifically about tracked items (issues, blockers, or pending tasks).
+Today's date is ${now}.
+Return ONLY a JSON object. No markdown, no code blocks, no explanation.
+The object must have:
+- "isItemQuery": boolean — true if the question is about issues, blockers, or pending items
+- "category": one of "issue", "blocker", "pending", or null — the specific category if asking about one type, null if asking about all or if not an item query
+- "from": ISO 8601 date string (YYYY-MM-DD) for the start of the time range, or null if no lower bound
+- "to": ISO 8601 date string (YYYY-MM-DD) for the end of the time range (exclusive), or null if no upper bound
+
+Examples:
+- "yesterday" → from: the day before today, to: today
+- "this week" → from: Monday of the current week, to: null
+- "last month" → from: first day of last month, to: first day of this month
+- "all" or no time filter → from: null, to: null
+
+Question: ${question}`;
+
 module.exports = {
   SUMMARY_TEMPLATE,
   ASK_TEMPLATE,
   EXTRACT_TEMPLATE,
+  CLASSIFY_TEMPLATE,
   AI_PROVIDER
 };
