@@ -24,7 +24,7 @@ function getDb() {
       session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
       category TEXT NOT NULL,
       text TEXT NOT NULL,
-      done INTEGER NOT NULL DEFAULT 0,
+      status INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
@@ -83,7 +83,7 @@ function getItems(sessionIds, { category, from, to } = {}) {
   const d = getDb();
   const placeholders = sessionIds.map(() => '?').join(',');
   const params = [...sessionIds];
-  let sql = `SELECT id, session_id, category, text, done, created_at FROM items WHERE session_id IN (${placeholders})`;
+  let sql = `SELECT id, session_id, category, text, status, created_at FROM items WHERE session_id IN (${placeholders})`;
   if (category) { sql += ` AND category = ?`; params.push(category); }
   if (from)     { sql += ` AND date(created_at) >= date(?)`; params.push(from); }
   if (to)       { sql += ` AND date(created_at) < date(?)`; params.push(to); }
@@ -91,8 +91,8 @@ function getItems(sessionIds, { category, from, to } = {}) {
   return d.prepare(sql).all(...params);
 }
 
-function markItemDone(itemId) {
-  getDb().prepare("UPDATE items SET done = 1 WHERE id = ?").run(itemId);
+function setItemStatus(itemId, status) {
+  getDb().prepare("UPDATE items SET status = ? WHERE id = ?").run(status, itemId);
 }
 
-module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, markItemDone };
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, setItemStatus };

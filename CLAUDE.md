@@ -5,4 +5,4 @@ While asking yes/no confirmation on any code change, always explain:
 - What the expected outcome is
 - Any risks or side effects
 
-The goal is to understand the changes, before confirming to proceed.
+This should be done file by file. The goal is to understand the change individually, before confirming to proceed.

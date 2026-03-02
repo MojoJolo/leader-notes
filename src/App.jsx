@@ -177,14 +177,29 @@ function App() {
 
       const result = await window.electronAPI.ask(sessionsContext, questionText)
 
+      let summary = result
+      let askItems = null
+      try {
+        const parsed = JSON.parse(result)
+        if (parsed.__itemResult) {
+          askItems = parsed.items
+          summary = ''
+        }
+      } catch {
+        // normal text answer
+      }
+
       // Create a new session for this Q&A
       await window.electronAPI.createSession(sessionId, sessionName, questionText, SessionType.ASK)
-      await window.electronAPI.updateSummary(sessionId, result)
+      await window.electronAPI.updateSummary(sessionId, summary)
       setSessions((prev) => [
         ...prev,
-        { id: sessionId, name: sessionName, note: questionText, summary: result, session_type: SessionType.ASK }
+        { id: sessionId, name: sessionName, note: questionText, summary, session_type: SessionType.ASK }
       ])
-      setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
+      setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: summary }))
+      if (askItems) {
+        setItemsBySessionId((prev) => ({ ...prev, [sessionId]: askItems }))
+      }
       setActiveSessionId(null)
       setSelectedSessionId(sessionId)
     } catch (err) {
@@ -452,28 +467,77 @@ function App() {
               <h3>Brief</h3>
               {loading ? (
                 <p className="summary-loading">Thinking...</p>
-              ) : summaryToShow ? (
-                <div className="summary-content">
-                  <Markdown>{summaryToShow}</Markdown>
-                </div>
-              ) : sessionIdToShow ? (
-                <p className="summary-empty">No summary for this session yet</p>
               ) : (
-                <p className="summary-empty">Submit a note to see the brief</p>
-              )}
-              {itemsToShow.length > 0 && (
-                <div className="items-section">
-                  <h3>Items</h3>
-                  {['issue', 'blocker', 'pending'].map((cat) => {
-                    const catItems = itemsToShow.filter((i) => i.category === cat)
+                <>
+                  {summaryToShow ? (
+                    <div className="summary-content">
+                      <Markdown>{summaryToShow}</Markdown>
+                    </div>
+                  ) : !itemsToShow.length && (
+                    <p className="summary-empty">{sessionIdToShow ? 'No summary for this session yet' : 'Submit a note to see the brief'}</p>
+                  )}
+                  {itemsToShow.length > 0 && (
+                    <div className={`items-section${summaryToShow ? ' items-section--with-summary' : ''}`}>
+                      {['issue', 'blocker', 'pending'].map((cat) => {
+                    const catItems = itemsToShow.filter((i) => i.category === cat && i.status !== -1)
                     if (!catItems.length) return null
                     return (
                       <div key={cat} className="items-group">
                         <p className="items-group__label">{cat}s</p>
                         <ul className="items-list">
                           {catItems.map((item) => (
-                            <li key={item.id} className={`items-list__item${item.done ? ' items-list__item--done' : ''}`}>
-                              {item.text}
+                            <li key={item.id} className={`items-list__item${item.status === 1 ? ' items-list__item--done' : ''}`}>
+                              <div className="items-list__item-row">
+                              <input
+                                type="checkbox"
+                                checked={item.status === 1}
+                                onChange={() => {
+                                  const newStatus = item.status === 1 ? 0 : 1
+                                  window.electronAPI.setItemStatus(item.id, newStatus)
+                                  setItemsBySessionId((prev) => {
+                                    const result = { ...prev }
+                                    const updateSession = (sid) => {
+                                      if (result[sid]) result[sid] = result[sid].map((i) => i.id === item.id ? { ...i, status: newStatus } : i)
+                                    }
+                                    updateSession(item.session_id)
+                                    if (sessionIdToShow !== item.session_id) updateSession(sessionIdToShow)
+                                    return result
+                                  })
+                                }}
+                              />
+                              <span className="items-list__item-text"><Markdown components={{ p: ({ children }) => <>{children}</> }}>{item.text}</Markdown></span>
+                              <button
+                                type="button"
+                                className="items-list__item-dismiss"
+                                onClick={() => {
+                                  window.electronAPI.setItemStatus(item.id, -1)
+                                  setItemsBySessionId((prev) => {
+                                    const result = { ...prev }
+                                    const updateSession = (sid) => {
+                                      if (result[sid]) result[sid] = result[sid].map((i) => i.id === item.id ? { ...i, status: -1 } : i)
+                                    }
+                                    updateSession(item.session_id)
+                                    if (sessionIdToShow !== item.session_id) updateSession(sessionIdToShow)
+                                    return result
+                                  })
+                                }}
+                                aria-label="Mark as invalid"
+                              >
+                                ×
+                              </button>
+                              </div>
+                              {item.session_id !== sessionIdToShow && (() => {
+                                const source = sessions.find((s) => s.id === item.session_id)
+                                return source ? (
+                                  <button
+                                    type="button"
+                                    className="items-list__item-source"
+                                    onClick={() => handleRestoreSession(item.session_id)}
+                                  >
+                                    {source.name}
+                                  </button>
+                                ) : null
+                              })()}
                             </li>
                           ))}
                         </ul>
@@ -481,6 +545,8 @@ function App() {
                     )
                   })}
                 </div>
+              )}
+                </>
               )}
             </div>
           )
