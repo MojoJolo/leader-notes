@@ -1,7 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
+const path = require("path");
+
+// Load .env before any other module reads process.env
+if (app.isPackaged) {
+  require("dotenv").config({ path: path.join(process.resourcesPath, ".env") });
+} else {
+  require("dotenv").config({ path: path.join(__dirname, "../.env") });
+}
 
 app.setName("Briefing");
-const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
 const { ASK_TEMPLATE, EXTRACT_TEMPLATE, CLASSIFY_TEMPLATE } = require("./ai/config.cjs");
@@ -24,7 +31,11 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadURL("http://localhost:5173");
+  if (app.isPackaged) {
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+  } else {
+    mainWindow.loadURL("http://localhost:5173");
+  }
   // mainWindow.webContents.openDevTools();
 }
 

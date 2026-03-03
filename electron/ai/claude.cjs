@@ -1,5 +1,3 @@
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const Anthropic = require("@anthropic-ai/sdk");
 const AIProvider = require("./provider.cjs");
 const { SUMMARY_TEMPLATE } = require("./config.cjs");
