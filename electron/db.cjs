@@ -24,8 +24,12 @@ function getDb() {
       session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
       category TEXT NOT NULL,
       text TEXT NOT NULL,
-      done INTEGER NOT NULL DEFAULT 0,
+      status INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS ask_items (
+      ask_session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE
     );
   `);
   return db;
@@ -83,7 +87,7 @@ function getItems(sessionIds, { category, from, to } = {}) {
   const d = getDb();
   const placeholders = sessionIds.map(() => '?').join(',');
   const params = [...sessionIds];
-  let sql = `SELECT id, session_id, category, text, done, created_at FROM items WHERE session_id IN (${placeholders})`;
+  let sql = `SELECT id, session_id, category, text, status, created_at FROM items WHERE session_id IN (${placeholders})`;
   if (category) { sql += ` AND category = ?`; params.push(category); }
   if (from)     { sql += ` AND date(created_at) >= date(?)`; params.push(from); }
   if (to)       { sql += ` AND date(created_at) < date(?)`; params.push(to); }
@@ -91,8 +95,26 @@ function getItems(sessionIds, { category, from, to } = {}) {
   return d.prepare(sql).all(...params);
 }
 
-function markItemDone(itemId) {
-  getDb().prepare("UPDATE items SET done = 1 WHERE id = ?").run(itemId);
+function setItemStatus(itemId, status) {
+  getDb().prepare("UPDATE items SET status = ? WHERE id = ?").run(status, itemId);
 }
 
-module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, markItemDone };
+function saveAskItems(askSessionId, itemIds) {
+  const d = getDb();
+  const insert = d.prepare("INSERT INTO ask_items (ask_session_id, item_id) VALUES (?, ?)");
+  for (const itemId of itemIds) {
+    insert.run(askSessionId, itemId);
+  }
+}
+
+function getItemsForAskSession(askSessionId) {
+  return getDb()
+    .prepare(`SELECT i.id, i.session_id, i.category, i.text, i.status, i.created_at
+              FROM items i
+              JOIN ask_items ai ON ai.item_id = i.id
+              WHERE ai.ask_session_id = ?
+              ORDER BY i.created_at ASC`)
+    .all(askSessionId);
+}
+
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, setItemStatus, saveAskItems, getItemsForAskSession };

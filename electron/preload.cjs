@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   deleteSession: (sessionId) => ipcRenderer.invoke("db:delete-session", sessionId),
   extractItems: (sessionId, note) => ipcRenderer.invoke("extract-items", sessionId, note),
   getItems: (sessionIds) => ipcRenderer.invoke("db:get-items", sessionIds),
-  markItemDone: (itemId) => ipcRenderer.invoke("db:mark-item-done", itemId),
+  queryItems: (filters) => ipcRenderer.invoke("db:query-items", filters),
+  setItemStatus: (itemId, status) => ipcRenderer.invoke("db:set-item-status", itemId, status),
+  saveAskItems: (askSessionId, itemIds) => ipcRenderer.invoke("db:save-ask-items", askSessionId, itemIds),
+  getItemsForAskSession: (askSessionId) => ipcRenderer.invoke("db:get-items-for-ask-session", askSessionId),
 });
