@@ -1,8 +1,8 @@
 const { join } = require("path");
 
 // AI Provider Configuration
-// Options: 'codex' or 'zai'
-const AI_PROVIDER = 'codex';
+// Options: 'claude', 'codex', or 'zai'
+const AI_PROVIDER = 'claude';
 
 const SUMMARY_TEMPLATE = (notes) => `I am a manager and I am leading the meeting for my team.
 Be my secretary and format what I send so it will be more readable.
