@@ -4,7 +4,7 @@ app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
-const { ASK_TEMPLATE } = require("./ai/config.cjs");
+const { ASK_TEMPLATE, EXTRACT_TEMPLATE, CLASSIFY_TEMPLATE } = require("./ai/config.cjs");
 
 let mainWindow;
 let expanded = false;
@@ -57,8 +57,70 @@ ipcMain.handle("summarize", async (_event, notes) => {
 });
 
 ipcMain.handle("ask", async (_event, sessionsContext, question) => {
+  // Classify the question first to determine if it targets tracked items
+  let classification = { isItemQuery: false, category: null, from: null, to: null };
+  try {
+    const now = new Date().toISOString().slice(0, 10);
+    const classifyRaw = await ai.summarize([CLASSIFY_TEMPLATE(question, now)]);
+    const cleaned = classifyRaw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed.isItemQuery === 'boolean') classification = parsed;
+  } catch {
+    // Fall through to normal ask on parse failure
+  }
+
+  if (classification.isItemQuery) {
+    const sessionIds = db.getAllSessions()
+      .filter((s) => s.session_type === 0)
+      .map((s) => s.id);
+    const items = db.getItems(sessionIds, {
+      category: classification.category || undefined,
+      from: classification.from || undefined,
+      to: classification.to || undefined,
+    });
+    return JSON.stringify({ __itemResult: true, items, category: classification.category, from: classification.from, to: classification.to });
+  }
+
   const prompt = ASK_TEMPLATE(sessionsContext, question);
   return ai.summarize([prompt]);
+});
+
+ipcMain.handle("extract-items", async (_event, sessionId, note) => {
+  const prompt = EXTRACT_TEMPLATE(note);
+  const raw = await ai.summarize([prompt]);
+  let items = [];
+  try {
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    items = JSON.parse(cleaned);
+    if (!Array.isArray(items)) items = [];
+  } catch {
+    return [];
+  }
+  db.replaceItems(sessionId, items);
+  return items;
+});
+
+ipcMain.handle("db:get-items", (_event, sessionIds) => {
+  return db.getItems(sessionIds);
+});
+
+ipcMain.handle("db:query-items", (_event, { category, from, to } = {}) => {
+  const sessionIds = db.getAllSessions()
+    .filter((s) => s.session_type === 0)
+    .map((s) => s.id);
+  return db.getItems(sessionIds, { category, from, to });
+});
+
+ipcMain.handle("db:set-item-status", (_event, itemId, status) => {
+  db.setItemStatus(itemId, status);
+});
+
+ipcMain.handle("db:save-ask-items", (_event, askSessionId, itemIds) => {
+  db.saveAskItems(askSessionId, itemIds);
+});
+
+ipcMain.handle("db:get-items-for-ask-session", (_event, askSessionId) => {
+  return db.getItemsForAskSession(askSessionId);
 });
 
 ipcMain.handle("toggle-expand", () => {
