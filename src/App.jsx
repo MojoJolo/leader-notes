@@ -28,7 +28,7 @@ function App() {
   const [editingSessionSource, setEditingSessionSource] = useState(null)
 
   useEffect(() => {
-    window.electronAPI.getSessions().then((loaded) => {
+    window.electronAPI.getSessions().then(async (loaded) => {
       setSessions(loaded)
       const withSummary = {}
       loaded.forEach((s) => {
@@ -36,17 +36,24 @@ function App() {
       })
       setSummariesBySessionId(withSummary)
 
-      const sessionIds = loaded.map((s) => s.id)
-      if (sessionIds.length > 0) {
-        window.electronAPI.getItems(sessionIds).then((allItems) => {
-          const grouped = {}
-          for (const item of allItems) {
-            if (!grouped[item.session_id]) grouped[item.session_id] = []
-            grouped[item.session_id].push(item)
-          }
-          setItemsBySessionId(grouped)
-        })
+      const noteSessions = loaded.filter((s) => s.session_type === SessionType.NOTE)
+      const askSessions = loaded.filter((s) => s.session_type === SessionType.ASK)
+      const grouped = {}
+
+      if (noteSessions.length > 0) {
+        const allItems = await window.electronAPI.getItems(noteSessions.map((s) => s.id))
+        for (const item of allItems) {
+          if (!grouped[item.session_id]) grouped[item.session_id] = []
+          grouped[item.session_id].push(item)
+        }
       }
+
+      await Promise.all(askSessions.map(async (s) => {
+        const items = await window.electronAPI.getItemsForAskSession(s.id)
+        if (items.length > 0) grouped[s.id] = items
+      }))
+
+      setItemsBySessionId(grouped)
     })
   }, [])
 
@@ -183,7 +190,7 @@ function App() {
         const parsed = JSON.parse(result)
         if (parsed.__itemResult) {
           askItems = parsed.items
-          summary = ''
+          summary = null
         }
       } catch {
         // normal text answer
@@ -198,6 +205,7 @@ function App() {
       ])
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: summary }))
       if (askItems) {
+        await window.electronAPI.saveAskItems(sessionId, askItems.map((i) => i.id))
         setItemsBySessionId((prev) => ({ ...prev, [sessionId]: askItems }))
       }
       setActiveSessionId(null)
@@ -439,6 +447,7 @@ function App() {
         </div>
         {expanded && (() => {
           const sessionIdToShow = selectedSessionId ?? currentSession?.id ?? null
+          const sessionToShow = sessions.find((s) => s.id === sessionIdToShow) ?? null
           const summaryToShow = sessionIdToShow ? summariesBySessionId[sessionIdToShow] : null
           const itemsToShow = sessionIdToShow ? (itemsBySessionId[sessionIdToShow] ?? []) : []
           return (
@@ -474,7 +483,13 @@ function App() {
                       <Markdown>{summaryToShow}</Markdown>
                     </div>
                   ) : !itemsToShow.length && (
-                    <p className="summary-empty">{sessionIdToShow ? 'No summary for this session yet' : 'Submit a note to see the brief'}</p>
+                    <p className="summary-empty">
+                      {!sessionIdToShow
+                        ? 'Submit a note to see the brief'
+                        : sessionToShow?.session_type === SessionType.ASK
+                          ? 'No answer for this question'
+                          : 'No summary for this session yet'}
+                    </p>
                   )}
                   {itemsToShow.length > 0 && (
                     <div className={`items-section${summaryToShow ? ' items-section--with-summary' : ''}`}>

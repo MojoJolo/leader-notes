@@ -78,7 +78,7 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
       from: classification.from || undefined,
       to: classification.to || undefined,
     });
-    return JSON.stringify({ __itemResult: true, items });
+    return JSON.stringify({ __itemResult: true, items, category: classification.category, from: classification.from, to: classification.to });
   }
 
   const prompt = ASK_TEMPLATE(sessionsContext, question);
@@ -104,8 +104,23 @@ ipcMain.handle("db:get-items", (_event, sessionIds) => {
   return db.getItems(sessionIds);
 });
 
+ipcMain.handle("db:query-items", (_event, { category, from, to } = {}) => {
+  const sessionIds = db.getAllSessions()
+    .filter((s) => s.session_type === 0)
+    .map((s) => s.id);
+  return db.getItems(sessionIds, { category, from, to });
+});
+
 ipcMain.handle("db:set-item-status", (_event, itemId, status) => {
   db.setItemStatus(itemId, status);
+});
+
+ipcMain.handle("db:save-ask-items", (_event, askSessionId, itemIds) => {
+  db.saveAskItems(askSessionId, itemIds);
+});
+
+ipcMain.handle("db:get-items-for-ask-session", (_event, askSessionId) => {
+  return db.getItemsForAskSession(askSessionId);
 });
 
 ipcMain.handle("toggle-expand", () => {

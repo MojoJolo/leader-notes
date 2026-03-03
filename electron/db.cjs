@@ -27,6 +27,10 @@ function getDb() {
       status INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS ask_items (
+      ask_session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE
+    );
   `);
   return db;
 }
@@ -95,4 +99,22 @@ function setItemStatus(itemId, status) {
   getDb().prepare("UPDATE items SET status = ? WHERE id = ?").run(status, itemId);
 }
 
-module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, setItemStatus };
+function saveAskItems(askSessionId, itemIds) {
+  const d = getDb();
+  const insert = d.prepare("INSERT INTO ask_items (ask_session_id, item_id) VALUES (?, ?)");
+  for (const itemId of itemIds) {
+    insert.run(askSessionId, itemId);
+  }
+}
+
+function getItemsForAskSession(askSessionId) {
+  return getDb()
+    .prepare(`SELECT i.id, i.session_id, i.category, i.text, i.status, i.created_at
+              FROM items i
+              JOIN ask_items ai ON ai.item_id = i.id
+              WHERE ai.ask_session_id = ?
+              ORDER BY i.created_at ASC`)
+    .all(askSessionId);
+}
+
+module.exports = { createSession, updateSessionNote, updateSessionName, updateSummary, deleteSession, getAllSessions, replaceItems, getItems, setItemStatus, saveAskItems, getItemsForAskSession };
