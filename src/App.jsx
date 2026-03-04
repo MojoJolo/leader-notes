@@ -1,15 +1,8 @@
 import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import './App.css'
-import { ADJECTIVES, NOUNS } from './data/wordLists'
 import { SessionType } from './constants/sessionTypes.js'
 import TitleBar from './components/TitleBar.jsx'
-
-function randomSessionName() {
-  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)]
-  return `${adj} ${noun}`
-}
 
 function App() {
   const [text, setText] = useState('')
