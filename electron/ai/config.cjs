@@ -18,7 +18,7 @@ Rules:
 - Output only the structured notes.
 - No em dash
 - bold the names
-- highlight product specific technical terms
+- bold product-specific technical terms
 
 If you feel that the update is of a specific type, use this formats:
 For standups:
@@ -70,6 +70,12 @@ If there are no items, return [].
 Notes:
 ${note}`;
 
+const NAME_TEMPLATE = (note) => `Generate a short title (3-6 words) for these meeting notes.
+Return ONLY the title. No quotes, no punctuation at the end, no explanation.
+
+Notes:
+${note}`;
+
 const CLASSIFY_TEMPLATE = (question, now) => `You are classifying a question about meeting notes.
 Determine if this question is asking specifically about tracked items (issues, blockers, or pending tasks).
 Today's date is ${now}.
@@ -93,5 +99,6 @@ module.exports = {
   ASK_TEMPLATE,
   EXTRACT_TEMPLATE,
   CLASSIFY_TEMPLATE,
+  NAME_TEMPLATE,
   AI_PROVIDER
 };
