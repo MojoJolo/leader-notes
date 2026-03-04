@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setItemStatus: (itemId, status) => ipcRenderer.invoke("db:set-item-status", itemId, status),
   saveAskItems: (askSessionId, itemIds) => ipcRenderer.invoke("db:save-ask-items", askSessionId, itemIds),
   getItemsForAskSession: (askSessionId) => ipcRenderer.invoke("db:get-items-for-ask-session", askSessionId),
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
 });

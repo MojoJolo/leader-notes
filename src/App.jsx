@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.css'
 import { SessionType } from './constants/sessionTypes.js'
 import TitleBar from './components/TitleBar.jsx'
@@ -293,6 +294,20 @@ function App() {
     }
   }
 
+  const markdownComponents = {
+    a: ({ href, children }) => (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault()
+          if (href) window.electronAPI.openExternal(href)
+        }}
+      >
+        {children}
+      </a>
+    ),
+  }
+
   return (
     <div className="app">
       <TitleBar expanded={expanded} onToggle={handleToggle} />
@@ -493,7 +508,7 @@ function App() {
                 <>
                   {summaryToShow ? (
                     <div className="summary-content">
-                      <Markdown>{summaryToShow}</Markdown>
+                      <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{summaryToShow}</Markdown>
                     </div>
                   ) : !itemsToShow.length && (
                     <p className="summary-empty">

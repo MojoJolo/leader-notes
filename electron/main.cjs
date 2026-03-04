@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 
 app.setName("Briefing");
 const path = require("path");
@@ -126,6 +126,10 @@ ipcMain.handle("db:save-ask-items", (_event, askSessionId, itemIds) => {
 
 ipcMain.handle("db:get-items-for-ask-session", (_event, askSessionId) => {
   return db.getItemsForAskSession(askSessionId);
+});
+
+ipcMain.handle("open-external", (_event, url) => {
+  shell.openExternal(url);
 });
 
 ipcMain.handle("toggle-expand", () => {
