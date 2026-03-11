@@ -2,7 +2,6 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const Anthropic = require("@anthropic-ai/sdk");
 const AIProvider = require("./provider.cjs");
-const { SUMMARY_TEMPLATE } = require("./config.cjs");
 
 class ClaudeProvider extends AIProvider {
   constructor() {
@@ -11,7 +10,7 @@ class ClaudeProvider extends AIProvider {
   }
 
   async summarize(notes) {
-    const prompt = SUMMARY_TEMPLATE(notes);
+    const prompt = notes.join("\n\n");
 
     const response = await this.client.messages.create({
       model: "claude-haiku-4-5",

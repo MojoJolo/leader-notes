@@ -302,6 +302,20 @@
   color: rgba(0, 0, 0, 0.45);
 }
 
+.session-naming {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-top-color: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  animation: session-naming-spin 0.7s linear infinite;
+}
+
+@keyframes session-naming-spin {
+  to { transform: rotate(360deg); }
+}
+
 .session-bar__name-input {
   width: 160px;
   height: 24px;

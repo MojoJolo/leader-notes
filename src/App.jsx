@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.css'
-import { ADJECTIVES, NOUNS } from './data/wordLists'
 import { SessionType } from './constants/sessionTypes.js'
 import TitleBar from './components/TitleBar.jsx'
-
-function randomSessionName() {
-  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)]
-  return `${adj} ${noun}`
-}
 
 function App() {
   const [text, setText] = useState('')
@@ -26,6 +20,7 @@ function App() {
   const [editingSessionId, setEditingSessionId] = useState(null)
   const [editingSessionName, setEditingSessionName] = useState('')
   const [editingSessionSource, setEditingSessionSource] = useState(null)
+  const [namingSessionIds, setNamingSessionIds] = useState(new Set())
 
   useEffect(() => {
     window.electronAPI.getSessions().then(async (loaded) => {
@@ -89,7 +84,7 @@ function App() {
     const noteToSave = text.trim()
     const notesToSend = [noteToSave]
     const sessionId = isNewSession ? Date.now() : activeSessionId
-    const sessionName = isNewSession ? randomSessionName() : currentSession.name
+    const sessionName = isNewSession ? '' : currentSession.name
 
     if (isNewSession) {
       await window.electronAPI.createSession(sessionId, sessionName, noteToSave, SessionType.NOTE)
@@ -97,6 +92,7 @@ function App() {
         ...prev,
         { id: sessionId, name: sessionName, note: noteToSave, summary: null, session_type: SessionType.NOTE }
       ])
+      setNamingSessionIds((prev) => new Set(prev).add(sessionId))
     } else {
       setSessions((prev) =>
         prev.map((s) =>
@@ -116,10 +112,24 @@ function App() {
     setLoading(true)
     setSelectedSessionId(sessionId)
     try {
-      const result = await window.electronAPI.summarize(notesToSend)
+      const [result, generatedName] = await Promise.all([
+        window.electronAPI.summarize(notesToSend),
+        isNewSession ? window.electronAPI.nameSession(noteToSave) : Promise.resolve(null),
+        window.electronAPI.extractItems(sessionId, noteToSave),
+      ])
       setSummariesBySessionId((prev) => ({ ...prev, [sessionId]: result }))
       await window.electronAPI.updateSummary(sessionId, result)
-      await window.electronAPI.extractItems(sessionId, noteToSave)
+      if (generatedName) {
+        await window.electronAPI.updateSessionName(sessionId, generatedName)
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? { ...s, name: generatedName } : s))
+        )
+        setNamingSessionIds((prev) => {
+          const next = new Set(prev)
+          next.delete(sessionId)
+          return next
+        })
+      }
       const items = await window.electronAPI.getItems([sessionId])
       if (items.length > 0) {
         setItemsBySessionId((prev) => ({ ...prev, [sessionId]: items }))
@@ -284,6 +294,20 @@ function App() {
     }
   }
 
+  const markdownComponents = {
+    a: ({ href, children }) => (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault()
+          if (href) window.electronAPI.openExternal(href)
+        }}
+      >
+        {children}
+      </a>
+    ),
+  }
+
   return (
     <div className="app">
       <TitleBar expanded={expanded} onToggle={handleToggle} />
@@ -334,9 +358,11 @@ function App() {
                         onDoubleClick={() => startRenameSession(currentSession, 'active')}
                         title={currentSession.name}
                       >
-                        {currentSession.name.length > 30
-                          ? `${currentSession.name.slice(0, 30)}...`
-                          : currentSession.name}
+                        {namingSessionIds.has(currentSession.id)
+                          ? <span className="session-naming" />
+                          : currentSession.name.length > 30
+                            ? `${currentSession.name.slice(0, 30)}...`
+                            : currentSession.name}
                       </span>
                     )}
                     <button
@@ -401,7 +427,9 @@ function App() {
                         />
                       ) : (
                         <span className="session-history__name" title={s.name}>
-                          {s.name.length > 60 ? `${s.name.slice(0, 60)}...` : s.name}
+                          {namingSessionIds.has(s.id)
+                            ? <span className="session-naming" />
+                            : s.name.length > 60 ? `${s.name.slice(0, 60)}...` : s.name}
                         </span>
                       )}
                       <button
@@ -480,7 +508,7 @@ function App() {
                 <>
                   {summaryToShow ? (
                     <div className="summary-content">
-                      <Markdown>{summaryToShow}</Markdown>
+                      <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{summaryToShow}</Markdown>
                     </div>
                   ) : !itemsToShow.length && (
                     <p className="summary-empty">

@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 
 app.setName("Briefing");
 const path = require("path");
 const ai = require("./ai/index.cjs");
 const db = require("./db.cjs");
-const { ASK_TEMPLATE, EXTRACT_TEMPLATE, CLASSIFY_TEMPLATE } = require("./ai/config.cjs");
+const { SUMMARY_TEMPLATE, ASK_TEMPLATE, EXTRACT_TEMPLATE, CLASSIFY_TEMPLATE, NAME_TEMPLATE } = require("./ai/config.cjs");
 
 let mainWindow;
 let expanded = false;
@@ -53,7 +53,7 @@ ipcMain.handle("db:delete-session", (_event, sessionId) => {
 });
 
 ipcMain.handle("summarize", async (_event, notes) => {
-  return ai.summarize(notes);
+  return ai.summarize([SUMMARY_TEMPLATE(notes)]);
 });
 
 ipcMain.handle("ask", async (_event, sessionsContext, question) => {
@@ -83,6 +83,11 @@ ipcMain.handle("ask", async (_event, sessionsContext, question) => {
 
   const prompt = ASK_TEMPLATE(sessionsContext, question);
   return ai.summarize([prompt]);
+});
+
+ipcMain.handle("name-session", async (_event, note) => {
+  const name = await ai.summarize([NAME_TEMPLATE(note)]);
+  return name.trim();
 });
 
 ipcMain.handle("extract-items", async (_event, sessionId, note) => {
@@ -121,6 +126,10 @@ ipcMain.handle("db:save-ask-items", (_event, askSessionId, itemIds) => {
 
 ipcMain.handle("db:get-items-for-ask-session", (_event, askSessionId) => {
   return db.getItemsForAskSession(askSessionId);
+});
+
+ipcMain.handle("open-external", (_event, url) => {
+  shell.openExternal(url);
 });
 
 ipcMain.handle("toggle-expand", () => {
